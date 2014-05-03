@@ -33,6 +33,8 @@ Changelog:
 
     1.0
     First public release. Don't get mad if it makes the game crash :^)
+    1.0.1
+    Hopefully fix a randomly occuring crash
 
 Authors:
 
