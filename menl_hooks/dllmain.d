@@ -96,13 +96,13 @@ void MainThread()
         return;
 
     // show the debug console if compiled for debug or if holding F10 during startup
-    if (GetAsyncKeyState(VK_F10))
-        InitConsole();
-    else
-        debug InitConsole();
+    //if (GetAsyncKeyState(VK_F10))
+    //    InitConsole();
+    //else
+    debug InitConsole();
 
-    WriteConsole("debug: mirrorsedge_hooks.dll loaded into MirrorsEdge.exe successfully");
-    WriteConsole(format("game version detected = %s", g_version));
+    debug WriteConsole("debug: mirrorsedge_hooks.dll loaded into MirrorsEdge.exe successfully");
+    debug WriteConsole(format("game version detected = %s", g_version));
 
      // the offsets are identical
     if (g_version == GameVersion.OriginOrDVD101)
@@ -113,7 +113,7 @@ void MainThread()
     InitData();
     InstallHooks();
 
-    WriteConsole("hooks: installed");
+    debug WriteConsole("hooks: installed");
 
     RunNamedPipe();
 }
@@ -292,7 +292,7 @@ void RunNamedPipe()
 
     while (true)
     {
-        WriteConsole("named pipe: waiting connection");
+        debug WriteConsole("named pipe: waiting connection");
 
         DisconnectNamedPipe(hPipe);
         while (!ConnectNamedPipe(hPipe, null) && GetLastError() != ERROR_PIPE_CONNECTED)
@@ -300,7 +300,7 @@ void RunNamedPipe()
             Sleep(1);
         }
 
-        WriteConsole("named pipe: connected");
+        debug WriteConsole("named pipe: connected");
 
         byte tmp;
         uint read;
@@ -311,7 +311,7 @@ void RunNamedPipe()
             Sleep(1);
         }
 
-        WriteConsole("named pipe: disconnected");
+        debug WriteConsole("named pipe: disconnected");
     }
 }
 
@@ -326,14 +326,14 @@ int StaticLevelLoadHook(void* levelInfo, int unk, void* unk2)
     wchar* wc = *cast(wchar**)(levelInfo+0x1C);
     string name = to!string(wc[0..wcslen(wc)]);
 
-    WriteConsole(format("static level load started: %s", name));
+    debug WriteConsole(format("static level load started: %s", name));
     SetPausedState(true);
 
     // they quit out, wipe the state
     if (name == "TdMainMenu")
         g_waitForSublevel = null;
 
-    WriteConsole("resetting level stream data");
+    debug WriteConsole("resetting level stream data");
     foreach (LevelStreamData d; g_levelStreamData)
     {
         d.Reset();
@@ -344,7 +344,7 @@ int StaticLevelLoadHook(void* levelInfo, int unk, void* unk2)
 
     SetPausedState(false);
 
-    WriteConsole("static level load finished");
+    debug WriteConsole("static level load finished");
 
     return ret;
 }
@@ -361,7 +361,7 @@ int MidLoadingStartHook()
 {
     int ret = MidLoadingStartGate();
 
-    WriteConsole("mid loading start detected");
+    debug WriteConsole("mid loading start detected");
     SetPausedState(true);
 
     return ret;
@@ -379,7 +379,7 @@ int MidLoadingEndHook()
 {
     int ret = MidLoadingEndGate();
 
-    WriteConsole("mid loading end detected");
+    debug WriteConsole("mid loading end detected");
     SetPausedState(false);
 
     return ret;
@@ -397,7 +397,7 @@ int DeathLoadingStartHook()
 {
     int ret = DeathLoadingStartGate();
 
-    WriteConsole("death loading start detected");
+    debug WriteConsole("death loading start detected");
     SetPausedState(true);
 
     return ret;
@@ -415,7 +415,7 @@ int DeathLoadingEndHook()
 {
     int ret = DeathLoadingEndGate();
 
-    WriteConsole("death loading end detected");
+    debug WriteConsole("death loading end detected");
     SetPausedState(false);
 
     return ret;
@@ -440,13 +440,13 @@ void SublevelFinishedLoadingHook(void* levelInfo, void* unk)
         int sublevelStrID = *cast(int*)(levelInfo+0x3C);
         string sublevelName = GetStringByID(sublevelStrID);
 
-        WriteConsole(format("sublevel finished loading: %s", sublevelName));
+        debug WriteConsole(format("sublevel finished loading: %s", sublevelName));
 
         foreach (LevelStreamData d; g_levelStreamData)
         {
             if (d.LastLoadSublevel == sublevelName)
             {
-                WriteConsole("cancelled waiting to reach required pos because the target sublevel finished loading");
+                debug WriteConsole("cancelled waiting to reach required pos because the target sublevel finished loading");
                 d.Reset();
                 break;
             }
@@ -458,7 +458,7 @@ void SublevelFinishedLoadingHook(void* levelInfo, void* unk)
         if (g_waitForSublevel == sublevelName || (g_waitForSublevel == "Factory_Bac" && sublevelName == "Factory_Pursu_lgts"))
         {
             g_waitForSublevel = null;;
-            WriteConsole("--elevator/oob finished loading--");
+            debug WriteConsole("--elevator/oob finished loading--");
             SetPausedState(false);
         }
     }
@@ -495,10 +495,10 @@ int LevelStreamStartHook()
 
     byte loadingType = *(*cast(byte**)(this_+0x88)+0xC); // 1 = loading, 0 = unloading
 
-    WriteConsole(loadingType == LOADTYPE_LOADING ? "-load list-" : "-unload list-");
+    debug WriteConsole(loadingType == LOADTYPE_LOADING ? "-load list-" : "-unload list-");
     foreach (string sublevel; sublevels)
     {
-        WriteConsole(format("%s: %X", sublevel, GetSublevelStatusFlag(sublevel)));
+        debug WriteConsole(format("%s: %X", sublevel, GetSublevelStatusFlag(sublevel)));
     }
 
     foreach (LevelStreamData d; g_levelStreamData)
@@ -519,17 +519,17 @@ int LevelStreamStartHook()
 
             if (d.IsPositional() && !d.RequiredPositionReached)
             {
-                WriteConsole("load started but required pos hasnt been reached yet. waiting until required area is reached before pausing");
+                debug WriteConsole("load started but required pos hasnt been reached yet. waiting until required area is reached before pausing");
                 d.LoadingBeforeRequiredPosition = true;
             }
             else
             {
                 SetPausedState(true);
-                WriteConsole("--elevator/oob load start detected--");
+                debug WriteConsole("--elevator/oob load start detected--");
                 g_waitForSublevel = d.LastLoadSublevel;
             }
 
-            WriteConsole(format("num loaded on unload list: %d/%d", numLoaded, sublevels.length));
+            debug WriteConsole(format("num loaded on unload list: %d/%d", numLoaded, sublevels.length));
 
             break;
         }
@@ -563,7 +563,7 @@ int UnknownPlayerFuncHook(float frametime)
     {
         if (d.CheckPosition(pos))
         {
-            WriteConsole("pausing because reached required pos and level not finished streaming yet");
+            debug WriteConsole("pausing because reached required pos and level not finished streaming yet");
             SetPausedState(true);
             g_waitForSublevel = d.LastLoadSublevel;
             break;
@@ -707,7 +707,7 @@ class LevelStreamData
 
         if (!this.RequiredPositionReached && player.Distance(&this.RequiredPosition) < this.RequiredPositionRadius)
         {
-            WriteConsole("required position reached");
+            debug WriteConsole("required position reached");
             this.RequiredPositionReached = true;
 
             if (this.LoadingBeforeRequiredPosition)
