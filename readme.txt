@@ -29,6 +29,10 @@ Notes:
     (Disabled for now) If you hold F10 while starting the game up, a debug console
     will appear. If something isn't working you can copy the output of it.
 
+    If you're wondering why it pauses awkwardly in elevators, it's because it 
+    only pauses when the game is actually loading something. Each elevator has
+    a fixed "start-up" duration that occurs before anything starts loading.
+
 Changelog:
 
     1.0
