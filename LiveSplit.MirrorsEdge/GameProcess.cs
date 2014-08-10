@@ -21,6 +21,7 @@ namespace LiveSplit.MirrorsEdge
         private CancellationTokenSource _cancelSource;
         private const string GAMEDLL = "menl_hooks.dll";
         private const string PIPE_NAME = "LiveSplit.MirrorsEdge";
+        private bool _pipeConnected;
 
         public void Run()
         {
@@ -33,10 +34,7 @@ namespace LiveSplit.MirrorsEdge
 
         public void Stop()
         {
-            if (_cancelSource == null || _thread == null)
-                throw new InvalidOperationException();
-
-            if (_thread.Status != TaskStatus.Running)
+            if (_cancelSource == null || _thread == null || _thread.Status != TaskStatus.Running)
                 return;
 
             _cancelSource.Cancel();
@@ -64,8 +62,7 @@ namespace LiveSplit.MirrorsEdge
 
                     Debug.WriteLine("dll injected");
 
-                    using (var pipe = new NamedPipeClientStream(".", PIPE_NAME, PipeDirection.In))
-                    using (var sr = new StreamReader(pipe))
+                    using (var pipe = new NamedPipeClientStream(".", PIPE_NAME, PipeDirection.In, PipeOptions.Asynchronous))
                     {
                         while (!gameProcess.HasExited)
                         {
@@ -81,15 +78,18 @@ namespace LiveSplit.MirrorsEdge
                             continue;
 
                         Debug.WriteLine("pipe connected");
-                        
-                        string line;
-                        // TODO: readline blocks so when cancellation is supported in 1.4, go async
-                        while ((line = sr.ReadLine()) != null)
+
+                        _pipeConnected = true;
+
+                        var buf = new byte[2048];
+                        pipe.BeginRead(buf, 0, buf.Length, PipeRead, new PipeState { Buffer = buf, Pipe = pipe });
+
+                        while (_pipeConnected)
                         {
-                            if (line == "pause" && this.OnPause != null)
-                                this.OnPause(this, EventArgs.Empty);
-                            else if (line == "unpause")
-                                this.OnUnpause(this, EventArgs.Empty);
+                            Thread.Sleep(250);
+
+                            if (_cancelSource.IsCancellationRequested)
+                                return;
                         }
 
                         Debug.WriteLine("pipe disconnected");
@@ -101,6 +101,30 @@ namespace LiveSplit.MirrorsEdge
                     Thread.Sleep(1000);
                 }
             }
+        }
+
+        void PipeRead(IAsyncResult ar)
+        {
+            var state = (PipeState)ar.AsyncState;
+
+            int read;
+            if ((read = state.Pipe.EndRead(ar)) == 0)
+            {
+                _pipeConnected = false;
+                return;
+            }
+
+            string message = Encoding.ASCII.GetString(state.Buffer, 0, read);
+            if (message == "pause\n" && this.OnPause != null)
+            {
+                this.OnPause(this, EventArgs.Empty);
+            }
+            else if (message == "unpause\n" && this.OnUnpause != null)
+            {
+                this.OnUnpause(this, EventArgs.Empty);
+            }
+
+            state.Pipe.BeginRead(state.Buffer, 0, state.Buffer.Length, PipeRead, state);
         }
 
         static Process GetGameProcess()
@@ -157,5 +181,11 @@ namespace LiveSplit.MirrorsEdge
                     SafeNativeMethods.CloseHandle(hThread);
             }
         }
+    }
+
+    struct PipeState
+    {
+        public NamedPipeClientStream Pipe;
+        public byte[] Buffer;
     }
 }
