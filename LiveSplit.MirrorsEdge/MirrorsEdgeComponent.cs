@@ -14,7 +14,7 @@ namespace LiveSplit.MirrorsEdge
     {
         public string ComponentName
         {
-            get { return "Mirror's Edge No Loads"; }
+            get { return "Mirror's Edge"; }
         }
 
         public IDictionary<string, Action> ContextMenuControls { get; protected set; }
@@ -22,24 +22,17 @@ namespace LiveSplit.MirrorsEdge
 
         private LiveSplitState _state;
         private GameProcess _gameProcess;
-        private TimeSpan _loadTime;
-        private TripleDateTime _pauseStartTime;
-        private TimeSpan _timeAtPause;
-        private bool _isPaused;
         private GraphicsCache _cache;
 
         public MirrorsEdgeComponent(LiveSplitState state)
         {
             this.ContextMenuControls = new Dictionary<String, Action>();
 
-            this.InternalComponent = new InfoTimeComponent(null, null, new RegularTimeFormatter(TimeAccuracy.Hundredths));
+            this.InternalComponent = new InfoTimeComponent("Without Loads", null, new RegularTimeFormatter(TimeAccuracy.Hundredths));
 
             _cache = new GraphicsCache();
-            _timeAtPause = new TimeSpan();
-            _loadTime = new TimeSpan();
 
             _state = state;
-            _state.OnReset += state_OnReset;
 
             _gameProcess = new GameProcess();
             _gameProcess.OnPause += gameProcess_OnPause;
@@ -47,64 +40,54 @@ namespace LiveSplit.MirrorsEdge
             _gameProcess.Run();
         }
 
+        public void Dispose()
+        {
+            if (_gameProcess != null)
+                _gameProcess.Stop();
+        }
+
         public void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
         {
-            if (_isPaused)
-                this.InternalComponent.TimeValue = (_timeAtPause - _loadTime);
-            else
-                this.InternalComponent.TimeValue = (_state.CurrentTime.Value - _loadTime);
+            this.InternalComponent.TimeValue =
+                state.CurrentTime[state.CurrentTimingMethod == TimingMethod.GameTime
+                    ? TimingMethod.RealTime : TimingMethod.GameTime];
+            this.InternalComponent.InformationName = state.CurrentTimingMethod == TimingMethod.GameTime
+                ? "Real Time" : "Game Time";
 
             _cache.Restart();
             _cache["TimeValue"] = this.InternalComponent.ValueLabel.Text;
+            _cache["TimingMethod"] = state.CurrentTimingMethod;
             if (invalidator != null && _cache.HasChanged)
                 invalidator.Invalidate(0f, 0f, width, height);
         }
 
         public void DrawVertical(Graphics g, LiveSplitState state, float width, Region region)
         {
-            this.InternalComponent.NameLabel.Text = "Without Loads";
-            this.InternalComponent.NameLabel.ForeColor = state.LayoutSettings.TextColor;
-            this.InternalComponent.ValueLabel.ForeColor = state.LayoutSettings.TextColor;
+            this.PrepareDraw(state);
             this.InternalComponent.DrawVertical(g, state, width, region);
         }
 
         public void DrawHorizontal(Graphics g, LiveSplitState state, float height, Region region)
         {
-            this.InternalComponent.NameLabel.Text = "Without Loads";
-            this.InternalComponent.NameLabel.ForeColor = state.LayoutSettings.TextColor;
-            this.InternalComponent.ValueLabel.ForeColor = state.LayoutSettings.TextColor;
+            this.PrepareDraw(state);
             this.InternalComponent.DrawHorizontal(g, state, height, region);
         }
 
-        void state_OnReset(object sender, EventArgs e)
+        void PrepareDraw(LiveSplitState state)
         {
-            _loadTime = new TimeSpan();
-            _isPaused = false;
+            this.InternalComponent.NameLabel.ForeColor = state.LayoutSettings.TextColor;
+            this.InternalComponent.ValueLabel.ForeColor = state.LayoutSettings.TextColor;
+            this.InternalComponent.NameLabel.HasShadow = this.InternalComponent.ValueLabel.HasShadow = state.LayoutSettings.DropShadows;
         }
 
         void gameProcess_OnPause(object sender, EventArgs e)
         {
-            if (!_isPaused && _state.CurrentPhase == TimerPhase.Running)
-            {
-                _pauseStartTime = TripleDateTime.Now;
-                _timeAtPause = _state.CurrentTime.Value;
-                _isPaused = true;
-            }
+            _state.IsGameTimePaused = true;
         }
 
         void gameProcess_OnUnpause(object sender, EventArgs e)
         {
-            if (_isPaused && _state.CurrentPhase == TimerPhase.Running)
-            {
-                _loadTime = _loadTime.Add(TripleDateTime.Now - _pauseStartTime);
-                _isPaused = false;
-            }
-        }
-
-        ~MirrorsEdgeComponent()
-        {
-            // TODO: in LiveSplit 1.4, components will be IDisposable
-            //_gameProcess.Stop();
+            _state.IsGameTimePaused = false;
         }
 
         public XmlNode GetSettings(XmlDocument document) { return document.CreateElement("Settings"); }
