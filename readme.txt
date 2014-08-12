@@ -8,18 +8,12 @@ glitches).
 
 Requirements:
 
-    LiveSplit 1.3+ (if enough people yell at me, I'll make a standalone version)
+    LiveSplit 1.4+
     Mirror's Edge (PC) - Steam, Origin, DVD, or No-CD crack
 
 Install:
 
-    Extract the contents of the zip file to your LiveSplit folder and overwrite
-    everything.
-
-    64-bit users only: Close LiveSplit and run LiveSplit32BitPatcher. This will not
-    be required in the next version of LiveSplit.
-
-    Restart LiveSplit. Add MENL in LiveSplit's Layout Editor.
+    Enter "Mirror's Edge" in LiveSplit's splits editor. Click activate.
 
 Notes:
 
@@ -39,6 +33,8 @@ Changelog:
     First public release. Don't get mad if it makes the game crash :^)
     1.0.1
     Hopefully fix a randomly occuring crash
+    1.1
+    Added support for LiveSplit 1.4's 'Game Time as primary timing method' feature
 
 Authors:
 
