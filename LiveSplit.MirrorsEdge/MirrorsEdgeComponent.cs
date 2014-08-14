@@ -1,4 +1,6 @@
-﻿using LiveSplit.Model;
+﻿using System.IO;
+using System.Security.Cryptography;
+using LiveSplit.Model;
 using LiveSplit.TimeFormatters;
 using LiveSplit.UI.Components;
 using LiveSplit.UI;
@@ -26,9 +28,11 @@ namespace LiveSplit.MirrorsEdge
 
         public MirrorsEdgeComponent(LiveSplitState state)
         {
+            this.ExtractGameHooksDLL();
+
             this.ContextMenuControls = new Dictionary<String, Action>();
 
-            this.InternalComponent = new InfoTimeComponent("Without Loads", null, new RegularTimeFormatter(TimeAccuracy.Hundredths));
+            this.InternalComponent = new InfoTimeComponent(null, null, new RegularTimeFormatter(TimeAccuracy.Hundredths));
 
             _cache = new GraphicsCache();
 
@@ -44,6 +48,41 @@ namespace LiveSplit.MirrorsEdge
         {
             if (_gameProcess != null)
                 _gameProcess.Stop();
+        }
+
+        public void ExtractGameHooksDLL()
+        {
+            // if an IO exception is thrown anywhere in here, the component will fail to load. this is intended.
+
+            string path = Path.Combine("Components", GameProcess.GAMEDLL);
+            if (!File.Exists(path))
+            {
+                File.WriteAllBytes(path, Properties.Resources.menl_hooks);
+                return;
+            }
+
+            byte[] installedVersion = File.ReadAllBytes(path);
+            using (var md5 = new MD5CryptoServiceProvider())
+            {
+                string installedVersionHash = Convert.ToBase64String(md5.ComputeHash(installedVersion));
+                string currentVersionHash = Convert.ToBase64String(md5.ComputeHash(Properties.Resources.menl_hooks));
+
+                if (installedVersionHash != currentVersionHash)
+                {
+                retry: // ?v=fiVr34QCF_c
+                    try
+                    {
+                        File.WriteAllBytes(path, Properties.Resources.menl_hooks);
+                    }
+                    catch (IOException)
+                    {
+                        if (DialogResult.Retry == 
+                            MessageBox.Show("Couldn't update " + GameProcess.GAMEDLL + "! Close the game and click Retry.", "Error",
+                            MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning))
+                            goto retry;
+                    }
+                }
+            }
         }
 
         public void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)

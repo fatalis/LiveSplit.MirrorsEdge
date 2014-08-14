@@ -19,7 +19,7 @@ namespace LiveSplit.MirrorsEdge
 
         private Task _thread;
         private CancellationTokenSource _cancelSource;
-        private const string GAMEDLL = "menl_hooks.dll";
+        public const string GAMEDLL = "menl_hooks.dll";
         private const string PIPE_NAME = "LiveSplit.MirrorsEdge";
         private bool _pipeConnected;
 
