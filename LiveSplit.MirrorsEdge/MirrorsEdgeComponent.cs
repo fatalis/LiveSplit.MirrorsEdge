@@ -91,7 +91,7 @@ namespace LiveSplit.MirrorsEdge
                 state.CurrentTime[state.CurrentTimingMethod == TimingMethod.GameTime
                     ? TimingMethod.RealTime : TimingMethod.GameTime];
             this.InternalComponent.InformationName = state.CurrentTimingMethod == TimingMethod.GameTime
-                ? "Real Time" : "Game Time";
+                ? "Real Time" : "Without Loads";
 
             _cache.Restart();
             _cache["TimeValue"] = this.InternalComponent.ValueLabel.Text;
