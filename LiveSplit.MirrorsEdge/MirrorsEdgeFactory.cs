@@ -1,7 +1,10 @@
 ﻿using System.Reflection;
+using LiveSplit.MirrorsEdge;
 using LiveSplit.UI.Components;
 using System;
 using LiveSplit.Model;
+
+[assembly: ComponentFactory(typeof(MirrorsEdgeFactory))]
 
 namespace LiveSplit.MirrorsEdge
 {
@@ -34,7 +37,7 @@ namespace LiveSplit.MirrorsEdge
 
         public string UpdateURL
         {
-            get { return "http://fatalis.hive.ai/livesplit/update/"; }
+            get { return "http://fatalis.pw/livesplit/update/"; }
         }
 
         public Version Version

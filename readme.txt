@@ -18,7 +18,7 @@ Install:
 Notes:
 
     If you need auto-splitting, you can use the one chillmastor made:
-    http://fatalis.hive.ai/misc/MirrorsEdgeAutosplit.zip
+    http://fatalis.pw/misc/MirrorsEdgeAutosplit.zip
 
     (Disabled for now) If you hold F10 while starting the game up, a debug console
     will appear. If something isn't working you can copy the output of it.
