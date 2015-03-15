@@ -92,8 +92,6 @@ void MainThread()
     g_base = GetModuleHandleA(null);
 
     g_version = DetectGameVersion();
-    if (g_version == GameVersion.Unknown)
-        return;
 
     // show the debug console if compiled for debug or if holding F10 during startup
     //if (GetAsyncKeyState(VK_F10))
@@ -144,7 +142,9 @@ GameVersion DetectGameVersion()
     }
     catch { }
 
-    return GameVersion.Unknown;
+    // for some reason this occurs for one person with a valid 31946072 byte Steam101 exe
+    // file permissions? who knows
+    return GameVersion.Steam101;
 }
 
 void InitConsole()

@@ -28,6 +28,6 @@ HANDLE CreateNamedPipeA(
     DWORD nDefaultTimeOut,
     LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
-bool ConnectNamedPipe(HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped);
+bool ConnectNamedPipe(HANDLE hNamedPipe, OVERLAPPED* lpOverlapped);
 bool DisconnectNamedPipe(HANDLE hNamedPipe);
 }
