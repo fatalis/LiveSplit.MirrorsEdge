@@ -1,7 +1,8 @@
 // this is the dll that gets injected into the game process and hooks engine functions
 // it communicates with livesplit over a named pipe
 
-import std.c.windows.windows;
+import core.sys.windows.windows: FlushFileBuffers;
+import core.sys.windows.windows;
 import core.sys.windows.dll;
 import std.c.stdio: freopen;
 import std.cstream;
@@ -9,6 +10,7 @@ import std.math;
 import std.string;
 import std.conv;
 import std.file;
+import core.stdc.wchar_ : wcslen;
 
 import hook;
 import win32;
