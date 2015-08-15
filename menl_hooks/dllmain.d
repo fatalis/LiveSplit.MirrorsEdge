@@ -11,11 +11,14 @@ import std.string;
 import std.conv;
 import std.file;
 import core.stdc.wchar_ : wcslen;
+import std.algorithm: canFind;
+import std.uni: toLower;
 
 import hook;
 import win32;
 
-export void stub() { };
+//extern(C)
+//export void stub() { };
 
 __gshared { // don't put globals in Thread Local Storage
 
@@ -29,6 +32,9 @@ GameVersion g_version;
 string g_waitForSublevel;
 void* g_player;
 bool g_consoleInitialized;
+string g_currentLevel;
+bool g_oncePerLevelFlag;
+string[] g_levelsSplitOn;
 
 }
 
@@ -56,6 +62,8 @@ enum OffsetName
     DeathLoadingEndFunc,
     UnknownImportantPtr,
     UnknownPlayerFunc,
+    //TdProfileSettingsSetProfileSettingValue,
+    //TdProfileSettingsSetProfileSettingValueInt
 }
 
 extern (Windows)
@@ -92,7 +100,6 @@ bool DllMain(HINSTANCE hInstance, uint ulReason, void* pvReserved)
 void MainThread()
 {
     g_base = GetModuleHandleA(null);
-
     g_version = DetectGameVersion();
 
     // show the debug console if compiled for debug or if holding F10 during startup
@@ -104,7 +111,7 @@ void MainThread()
     debug WriteConsole("debug: mirrorsedge_hooks.dll loaded into MirrorsEdge.exe successfully");
     debug WriteConsole(format("game version detected = %s", g_version));
 
-     // the offsets are identical
+    // the offsets are identical
     if (g_version == GameVersion.OriginOrDVD101)
         g_version = GameVersion.RELOADED101;
     else if (g_version == GameVersion.DVD100)
@@ -187,41 +194,47 @@ void InitData()
     g_levelStreamData ~= new LevelStreamData("Scraper_Lobby",            13, "Scraper_Duct"                    );
 
     g_offsetDB = new OffsetDB();
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.LevelStreamStartFunc,        0xA0F260);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.StringTablePtr,              0x1C67898);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.StaticLevelLoadFunc,         0xDC7650);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.SublevelFinishedLoadingFunc, 0x784970); // sig: 33 50 60 83 E2 01 31 50 60
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.MidLoadingStartFunc,         0xAC54B0);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.MidLoadingEndFunc,           0xAC5C80);
-    //g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.DeathLoadingStartFunc,       0xDC4E10);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.DeathLoadingStartFunc,       0xDC4DE0);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.DeathLoadingEndFunc,         0xDC5420);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.UnknownImportantPtr,         0x1C14D64);
-    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.UnknownPlayerFunc,           0xE68CF0); // sig: 8b 86 9c 00 00 00 8b 88
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.LevelStreamStartFunc,                       0xA0F260);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.StringTablePtr,                             0x1C67898);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.StaticLevelLoadFunc,                        0xDC7650);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.SublevelFinishedLoadingFunc,                0x784970); // sig: 33 50 60 83 E2 01 31 50 60
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.MidLoadingStartFunc,                        0xAC54B0);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.MidLoadingEndFunc,                          0xAC5C80);
+    //g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.DeathLoadingStartFunc,                    0xDC4E10);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.DeathLoadingStartFunc,                      0xDC4DE0);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.DeathLoadingEndFunc,                        0xDC5420);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.UnknownImportantPtr,                        0x1C14D64);
+    g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.UnknownPlayerFunc,                          0xE68CF0); // sig: 8b 86 9c 00 00 00 8b 88
+    //g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.TdProfileSettingsSetProfileSettingValue,    0xDEADBABE); // TODO
+    //g_offsetDB.Add(GameVersion.RELOADED101, OffsetName.TdProfileSettingsSetProfileSettingValueInt, 0xDEADBABE); // TODO
 
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.LevelStreamStartFunc,        0xA0F190);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.StringTablePtr,              0x1C4E7D8);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.StaticLevelLoadFunc,         0xDC6A70);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.SublevelFinishedLoadingFunc, 0x7848A0);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.MidLoadingStartFunc,         0xAC53E0);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.MidLoadingEndFunc,           0xAC5BB0);
-    //g_offsetDB.Add(GameVersion.Steam101,    OffsetName.DeathLoadingStartFunc,       0xDC4C30);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.DeathLoadingStartFunc,       0xDC4C00);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.DeathLoadingEndFunc,         0xDC5010);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.UnknownImportantPtr,         0x1BFBCA4);
-    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.UnknownPlayerFunc,           0xE679D0);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.LevelStreamStartFunc,                       0xA0F190);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.StringTablePtr,                             0x1C4E7D8);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.StaticLevelLoadFunc,                        0xDC6A70);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.SublevelFinishedLoadingFunc,                0x7848A0);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.MidLoadingStartFunc,                        0xAC53E0);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.MidLoadingEndFunc,                          0xAC5BB0);
+    //g_offsetDB.Add(GameVersion.Steam101,    OffsetName.DeathLoadingStartFunc,                    0xDC4C30);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.DeathLoadingStartFunc,                      0xDC4C00);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.DeathLoadingEndFunc,                        0xDC5010);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.UnknownImportantPtr,                        0x1BFBCA4);
+    g_offsetDB.Add(GameVersion.Steam101,    OffsetName.UnknownPlayerFunc,                          0xE679D0);
+    //g_offsetDB.Add(GameVersion.Steam101,    OffsetName.TdProfileSettingsSetProfileSettingValue,    0xC18690);
+    //g_offsetDB.Add(GameVersion.Steam101,    OffsetName.TdProfileSettingsSetProfileSettingValueInt, 0xC187A0);
 
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.LevelStreamStartFunc,        0xA0EE60);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.StringTablePtr,              0x1C67898);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.StaticLevelLoadFunc,         0xDC7050);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.SublevelFinishedLoadingFunc, 0x784740);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.MidLoadingStartFunc,         0xAC50B0);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.MidLoadingEndFunc,           0xAC5880);
-    //g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.DeathLoadingStartFunc,       0xDC4810);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.DeathLoadingStartFunc,       0xDC47E0);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.DeathLoadingEndFunc,         0xDC4E20);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.UnknownImportantPtr,         0x1C14D5C);
-    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.UnknownPlayerFunc,           0xE686F0);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.LevelStreamStartFunc,                       0xA0EE60);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.StringTablePtr,                             0x1C67898);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.StaticLevelLoadFunc,                        0xDC7050);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.SublevelFinishedLoadingFunc,                0x784740);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.MidLoadingStartFunc,                        0xAC50B0);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.MidLoadingEndFunc,                          0xAC5880);
+    //g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.DeathLoadingStartFunc,                    0xDC4810);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.DeathLoadingStartFunc,                      0xDC47E0);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.DeathLoadingEndFunc,                        0xDC4E20);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.UnknownImportantPtr,                        0x1C14D5C);
+    g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.UnknownPlayerFunc,                          0xE686F0);
+    //g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.TdProfileSettingsSetProfileSettingValue,    0xDEADBABE); // TODO
+    //g_offsetDB.Add(GameVersion.RELOADED100, OffsetName.TdProfileSettingsSetProfileSettingValueInt, 0xDEADBABE); // TODO
 }
 
 void InstallHooks()
@@ -273,6 +286,18 @@ void InstallHooks()
         cast(ubyte*)&UnknownPlayerFuncHook,
         cast(ubyte*)&UnknownPlayerFuncGate,
         JMP_SIZE);
+
+    //TrampolineHook(
+    //    cast(ubyte*)g_base+g_offsetDB.Get(g_version, OffsetName.TdProfileSettingsSetProfileSettingValue),
+    //    cast(ubyte*)&TdProfileSettingsSetProfileSettingValueHook,
+    //    cast(ubyte*)&TdProfileSettingsSetProfileSettingValueGate,
+    //    JMP_SIZE);
+
+    //TrampolineHook(
+    //    cast(ubyte*)g_base+g_offsetDB.Get(g_version, OffsetName.TdProfileSettingsSetProfileSettingValueInt),
+    //    cast(ubyte*)&TdProfileSettingsSetProfileSettingValueIntHook,
+    //    cast(ubyte*)&TdProfileSettingsSetProfileSettingValueIntGate,
+    //    JMP_SIZE+1);
 }
 
 void RunNamedPipe()
@@ -327,6 +352,10 @@ int StaticLevelLoadHook(void* levelInfo, int unk, void* unk2)
 
     wchar* wc = *cast(wchar**)(levelInfo+0x1C);
     string name = to!string(wc[0..wcslen(wc)]);
+    g_currentLevel = name;
+    g_oncePerLevelFlag = false;
+
+    CheckSplit(name);
 
     debug WriteConsole(format("static level load started: %s", name));
     SetPausedState(true);
@@ -349,6 +378,25 @@ int StaticLevelLoadHook(void* levelInfo, int unk, void* unk2)
     debug WriteConsole("static level load finished");
 
     return ret;
+}
+
+void CheckSplit(string level)
+{
+    static string[] splitLevels = ["escape_p", "stormdrain_p", "cranes_p", "subway_p", "mall_p", "factory_p",
+"boat_p", "convoy_p", "scraper_p"];
+
+    if (level.toLower() == "tutorial_p")
+    {
+        debug WriteConsole("start");
+        g_levelsSplitOn = [];
+        WritePipe("start");
+    }
+    else if (splitLevels.canFind(level.toLower()) && !g_levelsSplitOn.canFind(level.toLower()))
+    {
+        g_levelsSplitOn ~= level.toLower();
+        debug WriteConsole("split");
+        WritePipe("split");
+    }
 }
 
 extern(Windows)
@@ -459,7 +507,7 @@ void SublevelFinishedLoadingHook(void* levelInfo, void* unk)
                                                  // hack fix for ch6d elevator in SS
         if (g_waitForSublevel == sublevelName || (g_waitForSublevel == "Factory_Bac" && sublevelName == "Factory_Pursu_lgts"))
         {
-            g_waitForSublevel = null;;
+            g_waitForSublevel = null;
             debug WriteConsole("--elevator/oob finished loading--");
             SetPausedState(false);
         }
@@ -549,7 +597,6 @@ int LevelStreamStartGate() {
 
 // some function that runs every frame and it's this ptr can be used to find player position
 // use this to find player ptr and do stuff we need to do once per frame
-float g_test;
 extern(Windows)
 int UnknownPlayerFuncHook(float frametime)
 {
@@ -572,6 +619,21 @@ int UnknownPlayerFuncHook(float frametime)
         }
     }
 
+    static auto endingPos = Vector3f(-6987.5, 9672.7, 75237.5);
+    static auto stormdrainExitButtonPos = Vector3f(925.2, -6835.7, -3130.8);
+    if (!g_oncePerLevelFlag && endingPos.Distance(pos) < 12.0 && g_currentLevel == "Scraper_p")
+    {
+        WritePipe("end");
+        debug WriteConsole("end");
+        g_oncePerLevelFlag = true;
+    }
+    if (!g_oncePerLevelFlag && stormdrainExitButtonPos.Distance(pos) < 70.0 && g_currentLevel == "Stormdrain_p")
+    {
+        WritePipe("stormdrain");
+        debug WriteConsole("stormdrain");
+        g_oncePerLevelFlag = true;
+    }
+
     debug
     {
         //string test = format("%f %f %f", pos.X, pos.Y, pos.Z);
@@ -587,6 +649,66 @@ bool UnknownPlayerFuncGate(float frametime) {
         nop; nop; nop; nop; nop;   // overwritten bytes
         nop; nop; nop; nop; nop; } // jmp
 }
+
+// checkpoint split code
+/*extern(Windows)
+int TdProfileSettingsSetProfileSettingValueHook(int setting, wchar** value)
+{
+    void* this_; asm { mov this_, ECX; }
+
+    const int TDPID_LastSavedMap = 900;
+    const int TDPID_LastSavedCheckpoint = 901;
+
+    int ret = TdProfileSettingsSetProfileSettingValueGate(setting, value);
+
+    if (setting == TDPID_LastSavedMap)
+    {
+        debug WriteConsole(format("TDPID_LastSavedMap changed to '%s'", WCharToString(*value)));
+    }
+    else if (setting == TDPID_LastSavedCheckpoint)
+    {
+        debug WriteConsole(format("TDPID_LastSavedCheckpoint changed to '%s'", WCharToString(*value)));
+    }
+
+    return ret;
+}
+
+extern(Windows)
+int TdProfileSettingsSetProfileSettingValueGate(int setting, wchar** value) {
+    asm { naked;
+        nop; nop; nop; nop; nop; nop; nop; // overwritten bytes
+        nop; nop; nop; nop; nop; } // jmp
+}*/
+
+// old start detect (on press enter)
+/*extern(Windows)
+int TdProfileSettingsSetProfileSettingValueIntHook(int setting, int value)
+{
+    void* this_; asm { mov this_, ECX; }
+
+    const int TDPID_Game_NumGiveBulletDamage = 905;
+
+    int ret = TdProfileSettingsSetProfileSettingValueIntGate(setting, value);
+
+    // TdGame.u > TdUIScene_MainMenu > TdUIScene_DifficultySettings > OnAccept > ResetStats > TdStatsManager.uc > ResetStats > 
+    // P.SetProfileSettingValueInt(TDPID_Game_NumGiveBulletDamage, 0);
+    if (setting == TDPID_Game_NumGiveBulletDamage && value == 0 && g_currentLevel == "TdMainMenu")
+    {
+        debug WriteConsole("new game");
+        g_levelsSplitOn = [];
+        WritePipe("start");
+    }
+
+    return ret;
+}
+
+extern(Windows)
+int TdProfileSettingsSetProfileSettingValueIntGate(int setting, int value) {
+    asm { naked;
+        nop; nop; nop; nop; nop; nop; nop; // overwritten bytes
+        nop; nop; nop; nop; nop;           // jmp
+        nop; }                             // extra bytes
+}*/
 
 void WriteConsole(string message)
 {
@@ -614,6 +736,13 @@ bool WritePipe(string message)
     return true;
 }
 
+string WCharToString(const wchar* wc)
+{
+    if (wc is null)
+        return "";
+    return to!string(wc[0..wcslen(wc)]);
+}
+
 string GetStringByID(int id)
 {
     if (id == 0)
@@ -625,7 +754,7 @@ string GetStringByID(int id)
 
     wchar* wc = cast(wchar*)ptr;
 
-    return to!string(wc[0..wcslen(wc)]);
+    return WCharToString(wc);
 }
 
 byte GetSublevelStatusFlag(string level)

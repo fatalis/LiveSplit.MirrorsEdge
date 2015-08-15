@@ -129,8 +129,8 @@
   <useInline>0</useInline>
   <release>1</release>
   <preservePaths>0</preservePaths>
-  <warnings>0</warnings>
-  <infowarnings>0</infowarnings>
+  <warnings>1</warnings>
+  <infowarnings>1</infowarnings>
   <checkProperty>0</checkProperty>
   <genStackFrame>0</genStackFrame>
   <pic>0</pic>

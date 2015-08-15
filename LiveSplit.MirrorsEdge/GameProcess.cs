@@ -12,10 +12,19 @@ using System.Threading.Tasks;
 
 namespace LiveSplit.MirrorsEdge
 {
+    public enum SplitType
+    {
+        Chapter,
+        End,
+        Stormdrain
+    }
+
     class GameProcess
     {
         public event EventHandler OnPause;
         public event EventHandler OnUnpause;
+        public event EventHandler<SplitType> OnSplit;
+        public event EventHandler OnResetAndStart;
 
         private Task _thread;
         private CancellationTokenSource _cancelSource;
@@ -116,13 +125,17 @@ namespace LiveSplit.MirrorsEdge
 
             string message = Encoding.ASCII.GetString(state.Buffer, 0, read);
             if (message == "pause\n" && this.OnPause != null)
-            {
                 this.OnPause(this, EventArgs.Empty);
-            }
             else if (message == "unpause\n" && this.OnUnpause != null)
-            {
                 this.OnUnpause(this, EventArgs.Empty);
-            }
+            else if (message == "split\n" && this.OnSplit != null)
+                this.OnSplit(this, SplitType.Chapter);
+            else if (message == "end\n" && this.OnSplit != null)
+                this.OnSplit(this, SplitType.End);
+            else if (message == "stormdrain\n" && this.OnSplit != null)
+                this.OnSplit(this, SplitType.Stormdrain);
+            else if (message == "start\n" && this.OnResetAndStart != null)
+                this.OnResetAndStart(this, EventArgs.Empty);
 
             state.Pipe.BeginRead(state.Buffer, 0, state.Buffer.Length, PipeRead, state);
         }

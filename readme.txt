@@ -4,7 +4,8 @@ out loads. It is designed to be RTA Without Loads; only loading is removed.
 Types of loading removed: static load screens (starting a level, dying),
 mid-game loading (as seen after the Ropeburn death cutscene on some PCs),
 level streaming (the thing it does in elevator rides and Out of Bounds
-glitches).
+glitches). Starting with v1.2, it can also split for you automatically at the
+end of a chapter.
 
 Requirements:
 
@@ -16,9 +17,6 @@ Install:
     Enter "Mirror's Edge" in LiveSplit's splits editor. Click activate.
 
 Notes:
-
-    If you need auto-splitting, you can use the one chillmastor made:
-    http://fatalis.pw/misc/MirrorsEdgeAutosplit.zip
 
     (Disabled for now) If you hold F10 while starting the game up, a debug console
     will appear. If something isn't working you can copy the output of it.
@@ -35,6 +33,8 @@ Changelog:
     Hopefully fix a randomly occuring crash
     1.1
     Added support for LiveSplit 1.4's 'Game Time as primary timing method' feature
+    1.2
+    Auto-split support added
 
 Authors:
 
