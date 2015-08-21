@@ -159,7 +159,8 @@ namespace LiveSplit.MirrorsEdge
 
         static void InjectDLL(Process process, string path)
         {
-            IntPtr loadLibraryAddr = SafeNativeMethods.GetProcAddress(SafeNativeMethods.GetModuleHandle("kernel32.dll"), "LoadLibraryA");
+            IntPtr loadLibraryAddr = Get32BitLoadLibraryAddress();
+            Debug.WriteLine("LoadLibraryA address = 0x" + loadLibraryAddr.ToString("X"));
             if (loadLibraryAddr == IntPtr.Zero)
                 throw new Exception("Couldn't locate LoadLibraryA");
 
@@ -192,6 +193,26 @@ namespace LiveSplit.MirrorsEdge
                     SafeNativeMethods.VirtualFreeEx(process.Handle, mem, len, SafeNativeMethods.FreeType.Release);
                 if (hThread != IntPtr.Zero)
                     SafeNativeMethods.CloseHandle(hThread);
+            }
+        }
+
+        static IntPtr Get32BitLoadLibraryAddress()
+        {
+            if (!Environment.Is64BitProcess)
+                return SafeNativeMethods.GetProcAddress(SafeNativeMethods.GetModuleHandle("kernel32.dll"), "LoadLibraryA");
+
+            string componentsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? String.Empty;
+            string exe = Path.Combine(componentsDir, "menl_findloadlibrary.exe");
+            if (!File.Exists(exe))
+                return IntPtr.Zero;
+
+            using (var proc = new Process())
+            {
+                proc.StartInfo.FileName = exe;
+                proc.StartInfo.UseShellExecute = false;
+                proc.Start();
+                proc.WaitForExit();
+                return (IntPtr)proc.ExitCode;
             }
         }
     }
