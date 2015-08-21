@@ -9,10 +9,7 @@ namespace LiveSplit.MirrorsEdge
 {
     class MirrorsEdgeComponent : LogicComponent
     {
-        public override string ComponentName
-        {
-            get { return "Mirror's Edge"; }
-        }
+        public override string ComponentName => "Mirror's Edge";
 
         public MirrorsEdgeSettings Settings { get; set; }
 
@@ -36,8 +33,7 @@ namespace LiveSplit.MirrorsEdge
 
         public override void Dispose()
         {
-            if (_gameProcess != null)
-                _gameProcess.Stop();
+            _gameProcess?.Stop();
         }
 
         /*public void ExtractGameHooksDLL()

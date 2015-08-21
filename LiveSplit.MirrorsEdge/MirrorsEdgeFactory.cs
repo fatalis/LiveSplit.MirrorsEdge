@@ -10,44 +10,18 @@ namespace LiveSplit.MirrorsEdge
 {
     public class MirrorsEdgeFactory : IComponentFactory
     {
-        public string ComponentName
-        {
-            get { return "Mirror's Edge"; }
-        }
-
-        public string Description
-        {
-            get { return "Automatic load time remover for Mirror's Edge."; }
-        }
-
-        public ComponentCategory Category
-        {
-            get { return ComponentCategory.Control; }
-        }
+        public string ComponentName => "Mirror's Edge";
+        public string Description => "Automatic load time remover for Mirror's Edge.";
+        public ComponentCategory Category => ComponentCategory.Control;
 
         public IComponent Create(LiveSplitState state)
         {
             return new MirrorsEdgeComponent(state);
         }
 
-        public string UpdateName
-        {
-            get { return this.ComponentName; }
-        }
-
-        public string UpdateURL
-        {
-            get { return "http://fatalis.pw/livesplit/update/"; }
-        }
-
-        public Version Version
-        {
-            get { return Assembly.GetExecutingAssembly().GetName().Version; }
-        }
-
-        public string XMLURL
-        {
-            get { return this.UpdateURL + "Components/update.LiveSplit.MirrorsEdgeNoLoads.xml"; }
-        }
+        public string UpdateName => this.ComponentName;
+        public string UpdateURL => "http://fatalis.pw/livesplit/update/";
+        public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
+        public string XMLURL => this.UpdateURL + "Components/update.LiveSplit.MirrorsEdgeNoLoads.xml";
     }
 }

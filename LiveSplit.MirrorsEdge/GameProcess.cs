@@ -21,9 +21,10 @@ namespace LiveSplit.MirrorsEdge
 
     class GameProcess
     {
+        public delegate void SplitTypeEventHandler(object sender, SplitType type);
         public event EventHandler OnPause;
         public event EventHandler OnUnpause;
-        public event EventHandler<SplitType> OnSplit;
+        public event SplitTypeEventHandler OnSplit;
         public event EventHandler OnResetAndStart;
 
         private Task _thread;
@@ -124,18 +125,18 @@ namespace LiveSplit.MirrorsEdge
             }
 
             string message = Encoding.ASCII.GetString(state.Buffer, 0, read);
-            if (message == "pause\n" && this.OnPause != null)
-                this.OnPause(this, EventArgs.Empty);
-            else if (message == "unpause\n" && this.OnUnpause != null)
-                this.OnUnpause(this, EventArgs.Empty);
-            else if (message == "split\n" && this.OnSplit != null)
-                this.OnSplit(this, SplitType.Chapter);
-            else if (message == "end\n" && this.OnSplit != null)
-                this.OnSplit(this, SplitType.End);
-            else if (message == "stormdrain\n" && this.OnSplit != null)
-                this.OnSplit(this, SplitType.Stormdrain);
-            else if (message == "start\n" && this.OnResetAndStart != null)
-                this.OnResetAndStart(this, EventArgs.Empty);
+            if (message == "pause\n")
+                this.OnPause?.Invoke(this, EventArgs.Empty);
+            else if (message == "unpause\n")
+                this.OnUnpause?.Invoke(this, EventArgs.Empty);
+            else if (message == "split\n")
+                this.OnSplit?.Invoke(this, SplitType.Chapter);
+            else if (message == "end\n")
+                this.OnSplit?.Invoke(this, SplitType.End);
+            else if (message == "stormdrain\n")
+                this.OnSplit?.Invoke(this, SplitType.Stormdrain);
+            else if (message == "start\n")
+                this.OnResetAndStart?.Invoke(this, EventArgs.Empty);
 
             state.Pipe.BeginRead(state.Buffer, 0, state.Buffer.Length, PipeRead, state);
         }
