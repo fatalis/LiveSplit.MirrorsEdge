@@ -19,6 +19,7 @@ namespace LiveSplit.MirrorsEdge
         public MirrorsEdgeComponent(LiveSplitState state)
         {
             _timer = new TimerModel() { CurrentState = state };
+            _timer.OnStart += (sender, args) => _timer.InitializeGameTime();
             this.Settings = new MirrorsEdgeSettings(_timer);
 
             //this.ExtractGameHooksDLL();
