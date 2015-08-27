@@ -6,14 +6,7 @@ namespace LiveSplit.MirrorsEdge
     static class SafeNativeMethods
     {
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool ReadProcessMemory(
-            IntPtr hProcess,
-            IntPtr lpBaseAddress,
-            [Out] byte[] lpBuffer,
-            uint nSize, // should be IntPtr if we ever need to read a size bigger than 32 bit address space
-            out uint lpNumberOfBytesRead);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [In] byte[] lpBuffer, uint nSize, out uint lpNumberOfBytesWritten);
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -26,6 +19,7 @@ namespace LiveSplit.MirrorsEdge
         public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, AllocationType flAllocationType, MemoryProtection flProtect);
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool VirtualFreeEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, FreeType dwFreeType);
 
         [DllImport("kernel32.dll")]
@@ -37,6 +31,7 @@ namespace LiveSplit.MirrorsEdge
         public static extern UInt32 WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool CloseHandle(IntPtr hObject);
 
         [Flags]

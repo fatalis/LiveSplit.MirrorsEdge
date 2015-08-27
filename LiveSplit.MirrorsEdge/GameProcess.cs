@@ -4,11 +4,11 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using LiveSplit.ComponentUtil;
 
 namespace LiveSplit.MirrorsEdge
 {
@@ -57,8 +57,8 @@ namespace LiveSplit.MirrorsEdge
             {
                 try
                 {
-                    Process gameProcess;
-                    while ((gameProcess = GetGameProcess()) == null)
+                    Process game;
+                    while ((game = GetGameProcess()) == null)
                     {
                         Thread.Sleep(250);
                         if (_cancelSource.IsCancellationRequested)
@@ -67,14 +67,14 @@ namespace LiveSplit.MirrorsEdge
 
                     Debug.WriteLine("got process");
 
-                    if (!ProcessHasModule(gameProcess, GAMEDLL))
-                        InjectDLL(gameProcess, GetGameDLLPath());
+                    if (!ProcessHasModule(game, GAMEDLL))
+                        InjectDLL(game, GetGameDLLPath());
 
                     Debug.WriteLine("dll injected");
 
                     using (var pipe = new NamedPipeClientStream(".", PIPE_NAME, PipeDirection.In, PipeOptions.Asynchronous))
                     {
-                        while (!gameProcess.HasExited)
+                        while (!game.HasExited)
                         {
                             try
                             {
@@ -84,7 +84,7 @@ namespace LiveSplit.MirrorsEdge
                             catch (TimeoutException) { }
                             catch (IOException) { }
                         }
-                        if (gameProcess.HasExited || !pipe.IsConnected)
+                        if (game.HasExited || !pipe.IsConnected)
                             continue;
 
                         Debug.WriteLine("pipe connected");
@@ -155,7 +155,7 @@ namespace LiveSplit.MirrorsEdge
 
         static bool ProcessHasModule(Process process, string module)
         {
-            return process.Modules.Cast<ProcessModule>().Any(m => Path.GetFileName(m.FileName).ToLower() == module);
+            return process.ModulesWow64Safe().Any(m => m.ModuleName.ToLower() == module);
         }
 
         static void InjectDLL(Process process, string path)
@@ -174,17 +174,17 @@ namespace LiveSplit.MirrorsEdge
                 if ((mem = SafeNativeMethods.VirtualAllocEx(process.Handle, IntPtr.Zero, (uint)path.Length,
                     SafeNativeMethods.AllocationType.Commit | SafeNativeMethods.AllocationType.Reserve,
                     SafeNativeMethods.MemoryProtection.ReadWrite)) == IntPtr.Zero)
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    throw new Win32Exception();
 
                 byte[] bytes = Encoding.ASCII.GetBytes(path + "\0");
                 len = (uint)bytes.Length;
                 uint written;
                 if (!SafeNativeMethods.WriteProcessMemory(process.Handle, mem, bytes, len, out written))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    throw new Win32Exception();
 
                 if ((hThread = SafeNativeMethods.CreateRemoteThread(process.Handle, IntPtr.Zero, 0, loadLibraryAddr, mem, 0, IntPtr.Zero))
                     == IntPtr.Zero)
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    throw new Win32Exception();
 
                 SafeNativeMethods.WaitForSingleObject(hThread, 0xFFFFFFFF); // INFINITE
             }
