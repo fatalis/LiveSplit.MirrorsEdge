@@ -9,7 +9,7 @@ end of a chapter.
 
 Requirements:
 
-    LiveSplit 1.4+
+    LiveSplit 1.6+
     Mirror's Edge (PC) - Steam, Origin, DVD, or No-CD crack
 
 Install:
@@ -35,6 +35,8 @@ Changelog:
     Added support for LiveSplit 1.4's 'Game Time as primary timing method' feature
     1.2
     Auto-split support added
+    1.2.1
+    LiveSplit 1.6 support
 
 Authors:
 
