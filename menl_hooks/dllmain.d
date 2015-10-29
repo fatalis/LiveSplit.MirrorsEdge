@@ -184,7 +184,7 @@ void InitData()
                                                                                                                
     // special cases                                                                                           
     g_levelStreamData ~= new LevelStreamData("Stormdrain_Std",           15, "Stormdrain_StdP-StdE_slc_Lgts",  
-        Vector3f(1321f, -30039f, -6635f), 170f);                                                           
+        Vector3f(1321f, -30039f, -6635f), 150f);                                                           
     g_levelStreamData ~= new LevelStreamData("Stormdrain_StdP",          10, "Stormdrain_StdE-Out_Blding_slc",
         Vector3f(1488f, -10488f, -7267f), 70f);                                                            
                                                                                                                
@@ -627,7 +627,7 @@ int UnknownPlayerFuncHook(float frametime)
         debug WriteConsole("end");
         g_oncePerLevelFlag = true;
     }
-    if (!g_oncePerLevelFlag && stormdrainExitButtonPos.Distance(pos) < 70.0 && g_currentLevel == "Stormdrain_p")
+    if (!g_oncePerLevelFlag && stormdrainExitButtonPos.Distance(pos) < 100.0 && g_currentLevel == "Stormdrain_p")
     {
         WritePipe("stormdrain");
         debug WriteConsole("stormdrain");
