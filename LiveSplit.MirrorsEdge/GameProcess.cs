@@ -144,7 +144,7 @@ namespace LiveSplit.MirrorsEdge
         static Process GetGameProcess()
         {
             return Process.GetProcesses()
-                .FirstOrDefault(p => p.ProcessName.ToLower() == "mirrorsedge" && !p.HasExited);
+                .FirstOrDefault(p => p.ProcessName.ToLower() == "mirrorsedge" && !p.HasExited && ProcessHasModule(p, "OpenAL32.dll"));
         }
 
         static string GetGameDLLPath()
@@ -155,7 +155,7 @@ namespace LiveSplit.MirrorsEdge
 
         static bool ProcessHasModule(Process process, string module)
         {
-            return process.ModulesWow64Safe().Any(m => m.ModuleName.ToLower() == module);
+            return process.ModulesWow64Safe().Any(m => m.ModuleName.ToLower() == module.ToLower());
         }
 
         static void InjectDLL(Process process, string path)
